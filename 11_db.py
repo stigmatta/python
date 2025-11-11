@@ -135,17 +135,14 @@ def show_datediff():
         
         with db_connection.cursor(prepared=True, dictionary=True) as cursor:
             cursor.execute(sql, (user_date,))
-            
             for row in cursor:
                 diff = row['diff']
-                
                 if diff > 0:
                     print(f"Дата у минулому за {diff} днів від поточної дати")
                 elif diff < 0:
                     print(f"Дата у майбутньому через {abs(diff)} дні(днів) від поточної дати")
                 else:
                     print("Дата є поточною")
-                    
     except mysql.connector.Error as err:
         print(f"Помилка виконання запиту (валідація СУБД): {err}")
 
