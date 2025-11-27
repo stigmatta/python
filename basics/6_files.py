@@ -81,9 +81,9 @@ def parse_ini(filename: str) -> dict | None:
 
 def main() -> None :
     create_file()
-    #print_file("db.ini")
-    #print(read_as_string("db.ini"))
-    #print(parse_ini_imp("db.ini"))
+    print_file("db.ini")
+    print(read_as_string("db.ini"))
+    print(parse_ini_imp("db.ini"))
     print(parse_ini("db.ini"))
 
 

@@ -147,7 +147,8 @@ def show_datediff():
         print(f"Помилка виконання запиту (валідація СУБД): {err}")
 
 def close_connection():
-    db_connection.close()
+    if(db_connection is not None and db_connection.is_connected()):
+        db_connection.close()
 
 
 def main():

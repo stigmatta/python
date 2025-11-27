@@ -17,7 +17,7 @@ def main() -> None:
         return
     except:
         print("Caught an error")
-
+        
     try:
         throw_with_msg()
     except TypeError:

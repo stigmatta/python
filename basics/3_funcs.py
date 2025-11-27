@@ -21,6 +21,7 @@ def get_x() -> int :
 
 def set_x(new_x:int) -> None :
     x = new_x 
+    print ("X set to", x)
 
 
 def set_global_x(new_x:int) -> None :
@@ -37,16 +38,16 @@ def show(x:int) -> None :
 
 
 def main() -> None :
-    show(10)
+    # show(10)
     print('X =' , get_x())
     set_x(20)
     print('X =' , get_x())
-    set_global_x(20)
-    print('X =' , get_x())
-    print_hello()
-    print_hello("World")
-    greet()
-    greet(who="Everyone")
+    # set_global_x(20)
+    # print('X =' , get_x())
+    # print_hello()
+    # print_hello("World")
+    # greet()
+    # greet(who="Everyone")
 
 if __name__ == "__main__" :
     main()
