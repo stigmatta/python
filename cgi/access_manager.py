@@ -66,36 +66,47 @@ controller = parts[1] if len(parts) > 1 and len(parts[1].strip()) > 0 else 'Home
 module_name = controller.lower() + '_controller'    # назва файлу контролера без розширення (home_controller)
 class_name = controller.capitalize() + 'Controller' # назва класу (HomeController)
 
+def send_error(message, code=404, phrase="Not Found"):
+    print(f"Status: {code} {phrase}\n")
+    print("Content-Type: text/plain; charset=utf-8\n")
+    print()
+    print(message)
+    sys.stdout.flush()
+    os._exit(0)
+
 sys.path.append("./")   # додаємо поточну директорію як таку, в якій шукаються модулі динамічного імпорту
 import importlib        # підключаємо інструменти для динамічного імпорту
 
 try :
     # шукаємо (підключаємо) модуль з іменем module_name
     controller_module = importlib.import_module(f"controllers.{module_name}")
-
-    # у ньому знаходимо клас class_name, створюємо з нього об'єкт
-    controller_class = getattr(controller_module, class_name)
-    controller_object = controller_class(
-        CgiRequest(
-            server=server,
-            query_params=query_params,
-            headers=headers,
-            path=path,
-            controller=controller,
-            path_parts=parts[1:]
-        )
-    )
-
-    # шукаємо в об'єкті метод serve та виконуємо його - передаємо управління контролеру
-    controller_action = getattr(controller_object, "serve")
-    controller_action()
-
-    # у випадку успішного пошуку та виконання завершуємо роботу
-    sys.stdout.flush()
-    os._exit(0)
 except Exception as ex :
-    print("Status 404: Not Found")
+    send_error(f"Controller module '{module_name}' not found")
+
+controller_class = getattr(controller_module, class_name, None)
+if controller_class is None :
+    send_error(f"Controller class '{class_name}' not found in module '{module_name}'")
+
+controller_object = controller_class(
+    CgiRequest(
+        server=server,
+        query_params=query_params,
+        headers=headers,
+        path=path,
+        controller=controller,
+        path_parts=parts[1:]
+    )
+)
+controller_action = getattr(controller_object, "serve", None)
+if controller_action is None :
+    send_error(f"Controller action 'serve' not found in controller '{class_name}'")
+
+try:
+    controller_action()
+except Exception as ex :
+    message = "Request processing error "
     if DEV_MODE:
-        print(ex)
+        message += str(ex)
+    send_error(message, code=500, phrase="Internal Server Error")
 finally:
     sys.stdout.flush()

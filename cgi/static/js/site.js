@@ -20,7 +20,22 @@ function apiTestBtnClicked(e) {
     const resId = `${prefix}-${apiName}-${apiMethod}-result`;
     const td = document.getElementById(resId);
     if(td) {
-        td.innerText = resId;
+        fetch(`/${apiName}`, {
+            method: apiMethod.toUpperCase(),
+            headers: {
+                "Access-Control-Allow-Origin": "cgi221.loc",
+                "Custom-Header": "My Value",
+                "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" // "Aladdin" and password open sesame"
+            }
+            
+        }).then(r => {
+            if (r.ok){
+                r.json().then(j => td.innerHTML = `<pre>${JSON.stringify(j, null, 4)}</pre>`);
+            }
+            else{
+                r.text().then(t => td.innerText = t);
+            }
+        })
     }
     else {
         throw "Container not found: " + resId;

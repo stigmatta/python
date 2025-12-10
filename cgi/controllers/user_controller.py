@@ -4,6 +4,7 @@ import sys
 from models.request import CgiRequest
 
 class UserController:
+
     def __init__(self, request:CgiRequest):
         self.request = request
 
@@ -21,6 +22,7 @@ class UserController:
             "float": 1e-3,
             "str": "GET",
             "cyr": "Привіт",
+            "headers": self.request.headers,
         }
         print("Content-Type: application/json; charset=utf-8")
         print()
@@ -32,7 +34,7 @@ class UserController:
             "float": 1e-3,
             "str": "POST",
             "cyr": "Привіт",
+            "headers": self.request.headers,
         }
         sys.stdout.buffer.write(b"Content-Type: application/json; charset=utf-8\n\n")
-        print()
-        print(json.dumps(data, fp=sys.stdout.buffer, ensure_ascii=False))
+        sys.stdout.buffer.write(json.dumps(data, ensure_ascii=False).encode())
