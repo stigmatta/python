@@ -81,7 +81,7 @@ try :
     # шукаємо (підключаємо) модуль з іменем module_name
     controller_module = importlib.import_module(f"controllers.{module_name}")
 except Exception as ex :
-    send_error(f"Controller module '{module_name}' not found")
+    send_error(f"Controller module '{module_name}' not found. {str(ex)}")
 
 controller_class = getattr(controller_module, class_name, None)
 if controller_class is None :

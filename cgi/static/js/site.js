@@ -2,8 +2,8 @@ document.addEventListener("DOMContentLoaded", initApiTests);
 
 
 function initApiTests() {
-    const apiNames = ["user", "order"];
-    const apiMethods = ["get", "post", "put", "patch", "delete"];
+    const apiNames = ["user", "order", "discount"];
+    const apiMethods = ["get", "post"];
     for(let apiName of apiNames) {
         for(let apiMethod of apiMethods) {
             let btnId = `api-${apiName}-${apiMethod}-btn`;

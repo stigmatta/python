@@ -1,118 +1,72 @@
-import datetime
-import json
-import sys
-
-from models.request import CgiRequest
-
-class RestStatus:
-    def __init__(self,is_ok:bool, code:int, message:str):
-        self.is_ok = is_ok
-        self.code = code
-        self.message = message
-
-    def to_json(self):
-        return {
-            "isOk": self.is_ok,
-            "code": self.code,
-            "message": self.message
-        }
-
-RestStatus.status200 = RestStatus(True, 200, "OK")
-RestStatus.status405 = RestStatus(False, 405, "Method Not Allowed")
-
-class RestCache:
-    def __init__(self, exp:str|int|None=None, lifetime:int|None=None):
-        self.exp = exp
-        self.lifetime = lifetime
-
-    def to_json(self):
-        return {
-            "exp": self.exp,
-            "lifetime": self.lifetime,
-            "units": "seconds"
-        }
-
-RestCache.no = RestCache()
-RestCache.hrs1 = RestCache(lifetime=60*60)
-
-class RestMeta:
-    def __init__(self, service:str, request_method:str, auth_user_id:str|int|None=None, data_type:str="null",
-                 cache:RestCache=RestCache.no, server_time:int|None=None, params:dict|None=None, links:dict|None=None):
-        self.service = service
-        self.request_method = request_method
-        self.auth_user_id = auth_user_id
-        self.data_type = data_type
-        self.cache = cache
-        self.server_time = server_time if server_time is not None else datetime.datetime.now().timestamp()
-        self.params = params
-        self.links = links
-
-    def to_json(self):
-        return {
-            "service": self.service,
-            "request_method": self.request_method,
-            "auth_user_id": self.auth_user_id,
-            "data_type": self.data_type,
-            "cache": self.cache.to_json(),
-            "server_time": self.server_time,
-            "params": self.params,
-            "links": self.links,
-        }
-
-class RestResponse:
-    def __init__(self, meta:RestMeta,
-                  status:RestStatus=RestStatus.status200, data:any=None):
-        self.status = status
-        self.meta = meta
-        self.data=data
-
-    def to_json(self):
-        return {
-            "status": self.status.to_json(),
-            "meta": self.meta.to_json(),
-            "data": self.data,
-        }
-    
+import base64, binascii, re
+from controllers.controller_rest import RestController, RestMeta, RestStatus, RestCache
 
 
-
-
-
-class UserController:
-
-    def __init__(self, request:CgiRequest):
-        self.request = request
+class UserController(RestController):
 
     def serve(self):
-        self.response = RestResponse(meta=RestMeta(
-            service="User API",
-            request_method=self.request.request_method,
-            links={
-                "get": "GET /user",
-                "post": "POST /user",
-            }
-        ))
+        self.response.meta = RestMeta(
+           service="User API",
+           links={
+               "get": "GET /user",
+               "post": "POST /user",
+           }
+        )
+        super().serve()
 
-
-        action = "do_" + self.request.request_method.lower()
-        controller_action = getattr(self, action, None)
-        if controller_action:
-            controller_action()
-        else:
-            self.response.status = RestStatus.status405
-        sys.stdout.buffer.write(b"Content-Type: application/json; charset=utf-8\n\n")
-        sys.stdout.buffer.write(json.dumps(self.response, ensure_ascii=False,
-                                            default=lambda x: x.to_json() if hasattr(x, 'to_json') else str).encode())
+    def send_error(self, message: str, status_code: int):
+        self.response.status = RestStatus(False, status_code, "Error")
+        self.response.meta.cache = RestCache.no
+        self.response.meta.data_type = "string"
+        self.response.data = message
 
     def do_get(self):
         self.response.meta.service += ": authentication"
+
+        auth_header = self.request.headers.get("Authorization", None)
+        if not auth_header:
+            self.send_error("Unauthorized: Missing 'Authorization' header", 401)
+            return
+        
+        auth_scheme = 'Basic '
+        if not auth_header.startswith(auth_scheme):
+            self.send_error(f"Unauthorized: Invalid 'Authorization' header format: {auth_scheme} only", 401)
+            return
+        
+        credentials = auth_header[len(auth_scheme):]
+        if len(credentials) < 7:
+            self.send_error("Unauthorized: Invalid 'Authorization' header value", 401)
+            return
+        
+        match = re.search(r"[^a-zA-Z0-9+/=]", credentials)
+        if match:
+            self.send_error(f"Unauthorized: Format error (invalid symbol) for credentials {credentials}", 401)
+            return
+        
+        user_pass = None
+        try:
+            user_pass = base64.b64decode(credentials).decode('utf-8')
+        except binascii.Error:
+            self.send_error(f"Unauthorized: Padding error for credentials {credentials}", 401)
+            return
+        except Exception:
+            self.send_error(f"Unauthorized: Decoding error for credentials {credentials}", 401)
+            return
+        
+        if not user_pass:
+            self.send_error(f"Unauthorized: Decode error for credentials {credentials}", 401)
+            return
+
+        if not ':' in user_pass:
+            self.send_error("Unauthorized: Credential format error", 401)
+            return
+        
+        login, password = user_pass.split(':', 1)
+
         self.response.meta.cache = RestCache.hrs1
         self.response.data = {
-            "int": 10,
-            "float": 1e-3,
-            "str": "GET",
-            "cyr": "Привіт",
-            "headers": self.request.headers,
+            "login": login,
+            "password": password,
         }
 
     def do_post(self):
