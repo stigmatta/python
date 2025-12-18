@@ -13,6 +13,39 @@ function initApiTests() {
             }
         }
     }
+    const errorTests = {
+        "api-401-missing-header-btn": { 
+            endpoint: "/user",
+            method: "GET",
+            headers: {}, 
+            result: "api-missing-header-result"
+        },
+        "api-401-incorrect-scheme-btn": { 
+            endpoint: "/user",
+            method: "GET",
+            headers: { "Authorization": "Bearer invalid_token" },
+            result: "api-incorrect-scheme-result"
+        },
+        "api-401-short-credentials-btn": { 
+            endpoint: "/user",
+            method: "GET",
+            headers: { "Authorization": "Basic QQ==" },
+            result: "api-short-credentials-result"
+        },
+        "api-401-malformed-credentials-btn": { 
+            endpoint: "/user",
+            method: "GET",
+            headers: { "Authorization": "Basic QWxhZG~~~RpbjpvcGVuIHNlc2FtZQ==" },
+            result: "api-malformed-credentials-result"
+        }
+    };
+
+    Object.entries(errorTests).forEach(([btnId, params]) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.onclick = () => runApiErrorTest(params.endpoint, params.method, params.headers, params.result);
+        }
+    });
 }
 
 function apiTestBtnClicked(e) {
@@ -40,4 +73,33 @@ function apiTestBtnClicked(e) {
     else {
         throw "Container not found: " + resId;
     }
+}
+
+function runApiErrorTest(endpoint, method, headers, resId) {
+    const td = document.getElementById(resId);
+    if (!td) {
+        console.error("Container not found: " + resId);
+        return;
+    }
+
+    td.innerHTML = "<i>Testing...</i>";
+
+    fetch(endpoint, {
+        method: method,
+        headers: {
+            "Access-Control-Allow-Origin": "cgi221.loc",
+            ...headers 
+        }
+    })
+    .then(r => r.json().catch(() => r.text()))
+    .then(data => {
+        if (typeof data === 'object') {
+            td.innerHTML = `<pre style="color: #a00;">${JSON.stringify(data, null, 4)}</pre>`;
+        } else {
+            td.innerText = data;
+        }
+    })
+    .catch(err => {
+        td.innerHTML = `<b style="color:red">Network Error:</b> ${err.message}`;
+    });
 }

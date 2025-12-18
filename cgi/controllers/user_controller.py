@@ -35,7 +35,7 @@ class UserController(RestController):
         
         credentials = auth_header[len(auth_scheme):]
         if len(credentials) < 7:
-            self.send_error("Unauthorized: Invalid 'Authorization' header value", 401)
+            self.send_error("Unauthorized: Short 'Authorization' credentials value", 401)
             return
         
         match = re.search(r"[^a-zA-Z0-9+/=]", credentials)
@@ -79,3 +79,5 @@ class UserController(RestController):
             "cyr": "Привіт",
             "headers": self.request.headers,
         }
+
+    
