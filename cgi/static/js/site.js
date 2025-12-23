@@ -1,3 +1,36 @@
+class Base64 {
+    static #textEncoder = new TextEncoder();
+    static #textDecoder = new TextDecoder();
+
+    // https://datatracker.ietf.org/doc/html/rfc4648
+    static encode = (str) =>
+        btoa(String.fromCharCode(...Base64.#textEncoder.encode(str)));
+
+    static decode = (str) =>
+        Base64.#textDecoder.decode(
+            Uint8Array.from(atob(str), c => c.charCodeAt(0))
+        );
+
+    static encodeUrl = (str) =>
+        this.encode(str)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+
+    static decodeUrl = (str) =>
+        this.decode(str.replace(/-/g, '+').replace(/_/g, '/'));
+
+    static jwtEncodeBody = (header, payload) =>
+        this.encodeUrl(JSON.stringify(header)) + '.' +
+        this.encodeUrl(JSON.stringify(payload));
+
+    static jwtDecodePayload = (jwt) =>
+        JSON.parse(this.decodeUrl(jwt.split('.')[1]));
+
+    static jwtDecodeHeader = (jwt) =>
+        JSON.parse(this.decodeUrl(jwt.split('.')[0]));
+}
+
 document.addEventListener("DOMContentLoaded", initApiTests);
 
 
@@ -58,12 +91,25 @@ function apiTestBtnClicked(e) {
             headers: {
                 "Access-Control-Allow-Origin": "cgi221.loc",
                 "Custom-Header": "My Value",
-                "Authorization": "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" // "Aladdin" and password open sesame"
+                "Authorization": "Basic YWRtaW46YWRtaW4=" // "admin" and password admin
             }
             
         }).then(r => {
-            if (r.ok){
-                r.json().then(j => td.innerHTML = `<pre>${JSON.stringify(j, null, 4)}</pre>`);
+            if (r.ok) {
+                r.json().then(j => {
+                    td.innerHTML = `<pre>${JSON.stringify(j, null, 4)}</pre>`;
+                    document.getElementById("token").innerText = j.data;
+
+                    const headerJson = Base64.jwtDecodeHeader(j.data);
+                    document.getElementById("token-header").innerHTML =
+                        `<pre>${JSON.stringify(headerJson, null, 4)}</pre>`;
+
+                    const payloadBase64 = j.data.split('.')[1];
+                    const payloadJson = JSON.parse(Base64.decodeUrl(payloadBase64));
+
+                    document.getElementById("token-payload").innerHTML =
+                        `<pre>${JSON.stringify(payloadJson, null, 4)}</pre>`;
+                });
             }
             else{
                 r.text().then(t => td.innerText = t);

@@ -1,6 +1,8 @@
+import datetime
 import base64, binascii, re
+from dao import helper
 from controllers.controller_rest import RestController, RestMeta, RestStatus, RestCache
-
+from dao.data_accessor import DataAccessor
 
 class UserController(RestController):
 
@@ -62,12 +64,23 @@ class UserController(RestController):
             return
         
         login, password = user_pass.split(':', 1)
-
-        self.response.meta.cache = RestCache.hrs1
-        self.response.data = {
-            "login": login,
-            "password": password,
+        data_accessor = DataAccessor()
+        user = data_accessor.authenticate(login, password)
+        if not user:
+            self.send_error("Unauthorized: Credentials rejected", 401)
+            return
+        payload = {
+            "sub": str(user['user_id']),
+            "iss": "KNP_221_CGI",
+            "aud": user['role_id'],
+            "iat": datetime.datetime.now().timestamp(),
+            "name": user['user_name'],
+            "email": user['user_email'],
         }
+        self.response.meta.cache = RestCache.hrs1
+        self.response.meta.data_type = "object"
+        self.response.data = helper.compose_jwt(payload)
+
 
     def do_post(self):
         self.response.meta.service += ": registration"
