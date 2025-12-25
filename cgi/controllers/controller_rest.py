@@ -101,6 +101,12 @@ class RestController:
         sys.stdout.buffer.write(json.dumps(self.response, ensure_ascii=False,
                                             default=lambda x: x.to_json() if hasattr(x, 'to_json') else str).encode())
         
+    def send_error(self, message: str, status_code: int):
+        self.response.status = RestStatus(False, status_code, "Error")
+        self.response.meta.cache = RestCache.no
+        self.response.meta.data_type = "string"
+        self.response.data = message
+        
     def send_header_missing_response(self, header_name:str):
         self.response.status = RestStatus(False, 403, f"Forbidden: Missing required header '{header_name}'")
         self.response.meta.data_type = "null"

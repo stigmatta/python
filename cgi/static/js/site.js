@@ -79,36 +79,92 @@ function initApiTests() {
             btn.onclick = () => runApiErrorTest(params.endpoint, params.method, params.headers, params.result);
         }
     });
+
+    document.querySelector('[data-id="api-discount-get-btn"]').addEventListener("click", apiPassBtnClicked);
 }
 
-function apiTestBtnClicked(e) {
-    const [prefix, apiName, apiMethod, _] = e.target.id.split('-');
+function apiPassBtnClicked(e) {
+    const [prefix, apiName, apiMethod, _] = e.target.getAttribute("data-id").split('-');
     const resId = `${prefix}-${apiName}-${apiMethod}-result`;
-    const td = document.getElementById(resId);
+    const td = document.querySelector(`[data-id="${resId}"]`);
+    const path = e.target.getAttribute("data-path");
+
+    const tokenElem = document.getElementById("token");
+    const token = tokenElem ? tokenElem.innerText : null;
     if(td) {
-        fetch(`/${apiName}`, {
+        fetch(`/${apiName}${path}`, {
             method: apiMethod.toUpperCase(),
             headers: {
                 "Access-Control-Allow-Origin": "cgi221.loc",
                 "Custom-Header": "My Value",
-                "Authorization": "Basic YWRtaW46YWRtaW4=" // "admin" and password admin
+                "Authorization": token == null || token.length == 0 
+                    ? "Basic YWRtaW46YWRtaW4=" 
+                    : `Bearer ${token}` // "admin" and password admin
             }
             
         }).then(r => {
             if (r.ok) {
                 r.json().then(j => {
                     td.innerHTML = `<pre>${JSON.stringify(j, null, 4)}</pre>`;
-                    document.getElementById("token").innerText = j.data;
+                    if(j.meta.data_type == "token") {
+                        document.getElementById("token").innerText = j.data;
+                        const payloadBase64 = j.data.split('.')[1];
+                        const payloadJson = JSON.parse(Base64.decodeUrl(payloadBase64));
+
+                        document.getElementById("token-payload").innerHTML =
+                            `<pre>${JSON.stringify(payloadJson, null, 4)}</pre>`;
+                    }
 
                     const headerJson = Base64.jwtDecodeHeader(j.data);
                     document.getElementById("token-header").innerHTML =
                         `<pre>${JSON.stringify(headerJson, null, 4)}</pre>`;
 
-                    const payloadBase64 = j.data.split('.')[1];
-                    const payloadJson = JSON.parse(Base64.decodeUrl(payloadBase64));
+                });
+            }
+            else{
+                r.text().then(t => td.innerText = t);
+            }
+        })
+    }
+    else {
+        throw "Container not found: " + resId;
+    }
+}
 
-                    document.getElementById("token-payload").innerHTML =
-                        `<pre>${JSON.stringify(payloadJson, null, 4)}</pre>`;
+function apiTestBtnClicked(e) {
+    const [prefix, apiName, apiMethod, _] = e.target.id.split('-');
+    const resId = `${prefix}-${apiName}-${apiMethod}-result`;
+    const td = document.getElementById(resId);
+    const tokenElem = document.getElementById("token");
+    const token = tokenElem ? tokenElem.innerText : null;
+    if(td) {
+        fetch(`/${apiName}`, {
+            method: apiMethod.toUpperCase(),
+            headers: {
+                "Access-Control-Allow-Origin": "cgi221.loc",
+                "Custom-Header": "My Value",
+                "Authorization": token == null || token.length == 0 
+                    ? "Basic YWRtaW46YWRtaW4=" 
+                    : `Bearer ${token}` // "admin" and password admin
+            }
+            
+        }).then(r => {
+            if (r.ok) {
+                r.json().then(j => {
+                    td.innerHTML = `<pre>${JSON.stringify(j, null, 4)}</pre>`;
+                    if(j.meta.data_type == "token") {
+                        document.getElementById("token").innerText = j.data;
+                        const payloadBase64 = j.data.split('.')[1];
+                        const payloadJson = JSON.parse(Base64.decodeUrl(payloadBase64));
+
+                        document.getElementById("token-payload").innerHTML =
+                            `<pre>${JSON.stringify(payloadJson, null, 4)}</pre>`;
+                    }
+
+                    const headerJson = Base64.jwtDecodeHeader(j.data);
+                    document.getElementById("token-header").innerHTML =
+                        `<pre>${JSON.stringify(headerJson, null, 4)}</pre>`;
+
                 });
             }
             else{

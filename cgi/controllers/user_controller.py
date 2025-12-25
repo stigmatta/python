@@ -16,12 +16,6 @@ class UserController(RestController):
         )
         super().serve()
 
-    def send_error(self, message: str, status_code: int):
-        self.response.status = RestStatus(False, status_code, "Error")
-        self.response.meta.cache = RestCache.no
-        self.response.meta.data_type = "string"
-        self.response.data = message
-
     def do_get(self):
         self.response.meta.service += ": authentication"
 
@@ -78,7 +72,7 @@ class UserController(RestController):
             "email": user['user_email'],
         }
         self.response.meta.cache = RestCache.hrs1
-        self.response.meta.data_type = "object"
+        self.response.meta.data_type = "token"
         self.response.data = helper.compose_jwt(payload)
 
 
