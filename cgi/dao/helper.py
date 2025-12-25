@@ -1,5 +1,6 @@
 import datetime
 import hashlib,hmac,random,string,base64,json, re, binascii
+import uuid
 
 from models.request import CgiRequest
 
@@ -33,6 +34,25 @@ def validate_jwt_time(payload:dict, max_time:int=1000) -> None:
             
         if now - start_time > max_time:
             raise ValueError("Max validity time exceeded")
+
+def validate_jwt_claims(payload: dict, issuer: str = "Server-KN-P-221") -> None:
+    if "sub" not in payload:
+        raise ValueError("Token must include 'sub' claim")
+
+    if not isinstance(payload["sub"], str):
+        raise ValueError("'sub' must be a string")
+
+    try:
+        uuid.UUID(payload["sub"])
+    except ValueError:
+        raise ValueError("'sub' must be a valid UUID")
+
+    if payload.get("iss") != issuer:
+        raise ValueError(f"Invalid issuer (iss must be '{issuer}')")
+
+    if not ("name" in payload or "email" in payload):
+        raise ValueError("Token must include at least one of: 'name' or 'email'")
+
 
 def get_bearer(request:CgiRequest) -> str:
     auth_header = request.headers.get("Authorization", None)
