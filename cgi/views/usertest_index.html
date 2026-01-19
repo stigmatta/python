@@ -62,3 +62,200 @@
 <p id="token"></p>
 <p id="token-payload"></p>
 <p id="token-header"></p>
+<hr/>
+<h2>Самотестування авторизації</h2>
+<button id="run-all-tests">Запустити всі тести</button>
+<table>
+    <thead>
+        <tr>
+            <th>Тест</th>
+            <th>Результат</th>
+            <th>Деталі</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr data-test>
+            <td>
+                <i>Basic scheme</i>
+                <button data-token="Basic QWxhZGRpbjpvcGVuIHN1c2FtZQ==">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" data-details data-isok="false" data-message="Unauthorized"
+                data-data="Invalid 'Authorization' header format: Expected Bearer "></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Padding error</i>
+                <button data-token="Bearer QWxhZGRpbjpvcGVuIHN1c2FtZQ=.eyJzdwIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" data-isok="false" data-message="Unauthorized"
+             data-data="Invalid token header base64 padding error" data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Missing '.'</i>
+                <button data-token="Bearer YASD=">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token format (missing parts separator)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Non-base64 char</i>
+                <button data-token="Bearer ~yASD=.">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header format (invalid non-base64 character)" 
+                data-details></td>
+        </tr>
+
+        
+        <tr data-test>
+            <td>
+                <i>UTF-8 error</i>
+                <button data-token="Bearer 000000000000.eyJzdwIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header UTF-8 decoding error" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>JSON decoding error</i>
+                <button data-token="Bearer MiszPTU=.eyJzdwIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header JSON decoding error" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Non-JSON object</i>
+                <button data-token="Bearer WzEsMiwzXQ==.eyJzdwIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header not a JSON object" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Missing 'typ' field</i>
+                <button data-token="Bearer eyJ0eHAiOiIxMjMifQ==.eyJzdWIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header data (missing 'typ' field)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Invalid 'typ' field</i>
+                <button data-token="Bearer eyJ0eXAiOiIxMjMifQ==.eyJzdWIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header data (unsupported 'typ' field)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Missing 'alg' field</i>
+                <button data-token="Bearer eyJ0eXAiOiJKV1QiLCAiYWxnMSI6IkhTMjU1In0=.eyJzdW1i0iA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header data (missing 'alg' field)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Invalid 'alg' field</i>
+                <button data-token="Bearer eyJ0eXAiOiJKV1QiLCAiYWxnIjoiSFMyNTUifQ==.eyJzdWIiOiA">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token header data (unsupported 'alg ' field)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Invalid parts count</i>
+                <button data-token="Bearer eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJzdwIiOiAiMjk">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Invalid token format (invalid parts count)" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Invalid token signature</i>
+                <button data-token="Bearer eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJzdWIiOiAiZjczMzVjMmYtYmY1MS0xMWYwLTk1ZjctMDI1MGYyODgyYzAwIiwgImlzcyI6ICJLTlBfMjIxX0NHSSIsICJhdWQiOiAiYWRtaW4iLCAiaWF0IjogMTc2NzUzMzc3My42OTE2MTcsICJuYW1lIjogIkRlZmF1bHQgYWRtaW5pc3RyYXRvciIsICJlbWFpbCI6ICJjaGFuZ2UubWVAZmFrZS5uZXQifQ==.f01W9FfDWWLuqzIt8UfPEMAPB9hLGC4dvs2SuQES6vs=">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Unauthorized: Invalid token signature" 
+                data-details></td>
+        </tr>
+
+        <tr data-test>
+            <td>
+                <i>Invalid token signature</i>
+                <button data-token="Bearer eyJ0eXAiOiJKV1QiLCAiYWxnIjoiSFMyNTYiLCJuYmYiOiAyMDAwMDAwMDAwfQ==.jLNdDBPudJGC_oH5j_Mxe1anQD_0F-JzXdHG8HAkwrw=">Пуск</button>
+            </td>
+            <td data-result></td>
+            <td data-code="401" 
+                data-isok="false" 
+                data-message="Unauthorized"
+                data-data="Unauthorized: Invalid token signature" 
+                data-details></td>
+        </tr>
+
+
+    </tbody>
+</table>
+
+<div id="summary-container" style="display:none">
+    <h3>Підсумок тестування</h3>
+    <p id="summary-text"></p>
+</div>

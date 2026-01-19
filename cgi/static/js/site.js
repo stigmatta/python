@@ -81,7 +81,78 @@ function initApiTests() {
     });
 
     document.querySelector('[data-id="api-discount-get-btn"]').addEventListener("click", apiPassBtnClicked);
+    for(let btn of document.querySelectorAll("[data-token]")) {
+        btn.addEventListener("click", selfTestBtnClicked);
+    }
+
+
+    const allBtn = document.getElementById("run-all-tests")
+    if(allBtn) {
+        allBtn.addEventListener("click", runAllTestsClicked);
+    }
+
 }
+
+function runAllTestsClicked() {
+    for(let btn of document.querySelectorAll("[data-token]")) {
+        btn.click()
+    }
+}
+
+
+function selfTestBtnClicked(e) {
+    const successCode = 200;
+    const btn = e.target.closest("[data-token]");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    const res = tr.querySelector("[data-result]");
+    const dtl = tr.querySelector("[data-details]");
+
+    fetch("/discount", {
+        method: "GET",
+        headers: {
+            "Authorization": btn.dataset.token
+        }
+    })
+    .then(r => {
+        const cls = r.status == successCode ? "test-ok" : "test-fail";
+        dtl.innerHTML = `<span class="${cls}" title="expected code: ${successCode}">HTTP status: <b>${r.status}</b></span><br/>`;
+        return r.json();
+    })
+    .then(j => {
+        let expected = dtl.getAttribute("data-isok");
+        let code = dtl.getAttribute("data-code");
+        let data = dtl.getAttribute("data-data");
+
+        let cls = j.status.isOk.toString() == expected ? "test-ok" : "test-fail";
+        dtl.innerHTML += `<span class="${cls}" title="expected isOk: ${expected}">REST isOk: <b>${j.status.isOk}</b></span><br/>`;
+
+        cls = j.status.code.toString() == code ? "test-ok" : "test-fail";
+        dtl.innerHTML += `<span class="${cls}" title="expected code: ${expected}">REST status: <b>${j.status.code}</b></span><br/>`;
+
+        cls = j.status.message == j.status.message ? "test-ok" : "test-fail";
+        dtl.innerHTML += `<span class = "${cls}" title="expected message: ${j.status.message}">REST message: <b>${j.status.message}</b></span><br/>`;
+
+        cls = String(j.data) == data ? "test-ok" : "test-fail";
+        dtl.innerHTML += `<span class="${cls}" title="expected data: ${data}">
+            REST data: <b>${j.data}</b>
+        </span><br/>`;
+
+            const hasFail = dtl.querySelector(".test-fail");
+            res.textContent = hasFail ? "FAILED" : "SUCCESS";
+            res.className = hasFail ? "test-fail" : "test-ok";
+
+    })
+    .catch(err => {
+        dtl.textContent = err.message;
+    });
+}
+
+
+
 
 function apiPassBtnClicked(e) {
     const [prefix, apiName, apiMethod, _] = e.target.getAttribute("data-id").split('-');

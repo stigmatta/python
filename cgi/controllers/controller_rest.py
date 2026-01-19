@@ -102,7 +102,15 @@ class RestController:
                                             default=lambda x: x.to_json() if hasattr(x, 'to_json') else str).encode())
         
     def send_error(self, message: str, status_code: int):
-        self.response.status = RestStatus(False, status_code, "Error")
+        status_map = {
+            401: RestStatus.status401,
+            405: RestStatus.status405,
+            200: RestStatus.status200
+        }
+        self.response.status = status_map.get(
+            status_code,
+            RestStatus(False, status_code, "Error")
+        )       
         self.response.meta.cache = RestCache.no
         self.response.meta.data_type = "string"
         self.response.data = message

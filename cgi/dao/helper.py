@@ -4,7 +4,6 @@ import uuid
 
 from models.request import CgiRequest
 
-
 def jwt_payload_from_request(request:CgiRequest, required: bool=False) -> dict|None:
 
     try:
@@ -57,11 +56,11 @@ def validate_jwt_claims(payload: dict, issuer: str = "Server-KN-P-221") -> None:
 def get_bearer(request:CgiRequest) -> str:
     auth_header = request.headers.get("Authorization", None)
     if not auth_header:
-        raise ValueError("Unauthorized: Missing 'Authorization' header")
+        raise ValueError("Missing 'Authorization' header")
     
     auth_scheme = 'Bearer '
     if not auth_header.startswith(auth_scheme):
-        raise ValueError(f"Unauthorized: Invalid 'Authorization' header format: {auth_scheme} only")
+        raise ValueError(f"Invalid 'Authorization' header format: Expected {auth_scheme}")
     
     return auth_header[len(auth_scheme):]
 
@@ -74,7 +73,7 @@ def get_payload_from_jwt(jwt:str) -> dict:
     
     non64char = re.compile(r'[^a-zA-Z0-9\-\_=]')
     if re.search(non64char, jwtSplitted[0]) != None:
-        raise ValueError(f"Invalid token header format (invalid non-base64 character) `{joseHeader}`")
+        raise ValueError(f"Invalid token header format (invalid non-base64 character)")
     
     try:
         joseHeader = b64_to_obj(jwtSplitted[0])

@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./cgi/models",
+        "./cgi/dao"
+    ]
+}

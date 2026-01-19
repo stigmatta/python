@@ -1,3 +1,14 @@
 body {
     background-color: rgb(218, 169, 218);
 }
+
+.test-ok {
+    background-color: green;
+    color:lime;
+    padding: 0 5px;
+}
+.test-fail {
+    background-color: maroon;
+    color: #f86368;
+    padding: 0 5px;
+}
