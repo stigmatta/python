@@ -6,23 +6,19 @@ def url_decode(input_str: str | None) -> str | None:
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Розділяємо шлях та параметри
         parts = self.path.split("?", 1)
         full_path = parts[0]
         query_string = parts[1] if len(parts) > 1 else None
         
         query_params = {}
         
-        # Обробляємо параметри тільки якщо вони є (інакше виникне помилка на None.split)
         if query_string:
             for item in query_string.split("&"):
                 if not item:
                     continue
                 
-                # Декодуємо ключ та значення після розділення (як на image_1680da.png)
                 key, value = map(url_decode, item.split("=", 1) if "=" in item else [item, None])
                 
-                # Логіка збору параметрів у списки (як на image_1680da.png)
                 query_params[key] = value if key not in query_params else [
                     *(query_params[key] if isinstance(query_params[key], (list, tuple)) else [query_params[key]]),
                     value
