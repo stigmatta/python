@@ -1,6 +1,11 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import os
 import socket
-import urllib.parse 
+import sys
+import urllib.parse
+
+DEV_MODE = True
+
 
 def url_decode(input_str: str | None) -> str | None:
     return None if input_str is None else urllib.parse.unquote_plus(input_str)
@@ -51,7 +56,17 @@ class AccessManagerRequestHandler(BaseHTTPRequestHandler):
         method = getattr(self, mname)
         method()
 
-class RequestHandler(AccessManagerRequestHandler):
+class RequestHandler(AccessManagerRequestHandler):  
+    
+    ALLOWED_STATIC_TYPES = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".css": "text/css",
+    ".js": "application/javascript",
+    ".html": "text/html",
+    }
 
     def __init__(self, request, client_address, server):
         self.query_params = {}
@@ -65,6 +80,10 @@ class RequestHandler(AccessManagerRequestHandler):
     
     def access_manager(self):
         parts = self.path.split("?", 1)
+        
+        if(self.check_static_asset(parts[0])):
+            return
+        
         self.api["method"] = self.command
 
         splitted_path = [url_decode(p) for p in parts[0].strip("/").split("/", 1)]
@@ -86,68 +105,79 @@ class RequestHandler(AccessManagerRequestHandler):
                     value
                 ]
         
-        return super().access_manager()
+        module_name = self.api["service"].lower() + '_controller'    # назва файлу контролера без розширення (home_controller)
+        class_name  = self.api["service"].capitalize() + 'Controller' # назва класу (HomeController)
 
-    def do_GET(self):
+        # маршрутизація контролерів
+        sys.path.append("./")   # додаємо поточну директорію як таку, в якій шукаються модулі динамічного імпорту
+        import importlib        # підключаємо інструменти для динамічного імпорту
 
-        self.send_response(200, "OK")
-        self.send_header("Content-type", "text/html; charset=utf-8")
-        self.end_headers()
+        try :
+            # шукаємо (підключаємо) модуль з іменем module_name
+            controller_module = importlib.import_module(f"controllers.{module_name}")
+        except Exception as ex:
+            self.send_error(404, f"Controller module not found: {module_name} {ex if DEV_MODE else ''}")
+            return
         
-        query_params_links_html = f"""
-        <h2>Перевірка query params (Д.З.):</h2>
-        <ul>
-            <li><a href="/user/auth">Без параметрів (/user/auth)</a></li>
-            <li><a href="/user/auth?">Без параметрів з "?" (/user/auth?)</a></li>
-            <li><a href="/user/auth?hash=1a2d==&p=50/50&q=who?&x=10&y=20&x=30&json">З повторами ключів та "=" в значенні</a></li>
-            <li><a href="/user/auth?hash=1a2d==&p=50/50&q=who?&&x=10&y=20&x=30&json&url=%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&2+2=4">URL-кодовані параметри та "+"</a></li>
-        </ul>
-        <hr>
-        """
+        # у ньому знаходимо клас class_name, створюємо з нього об'єкт
+        controller_class = getattr(controller_module, class_name, None)
+        if controller_class is None :
+            self.send_error(404, f"Controller class not found: {class_name}")
+            return
 
-        routes_links_html = f"""
-        <h2>Перевірка роутінгу (Д.З.):</h2>
-        <ul>
-            <li><a href="/">Без параметрів (/)</a></li>
-            <li><a href="/user/">(/user/)</a></li>
-            <li><a href="/user">(/user)</a></li>
-            <li><a href="/user/auth">(/user/auth)</a></li>
-            <li><a href="/user/auth/secret">(/user/auth/secret)</a></li>
-            <li><a href="/user/%D0%A3%D0%BD%D1%96%D1%84%D1%96%D0%BA%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9&%D0%BB%D0%BE%D0%BA%D0%B0%D1%82%D0%BE%D1%80=%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%D1%96%D0%B2&2+2=4">(/user/auth/ENCODED)</a></li>
-        </ul>
-        <hr>
-        """
+        controller_object = controller_class(self)
+        
+        # шукаємо в об'єкті метод serve ...
 
-        self.wfile.write(f"""
-            <html>
-                <body>
-                    {query_params_links_html}
-                    <br>
-                    <br>
-                    {routes_links_html}
-                    <b>self.path:</b> {self.path}<br>
-                    <b>Параметри (словник):</b> {self.query_params}
-                    <b>API:</b> {self.api}
-                    <hr>
-                    <button onclick="linkClick()">LINK</button>
-                    <p id=out></p>
-                    <script>
-                        function linkClick() {{
-                            fetch('/', {{ method: 'LINK' }}).then(response => response.text())
-                            .then(data => {{
-                                out.innerText = data;
-                            }})
-                        }}
-                    </script>
-                </body>
-            </html>
-        """.encode())
+        mname = 'do_' + self.command
+        if not hasattr(controller_object, mname):
+            self.send_error(405, "Unsupported method (%r) in '%r'" % (self.command, class_name))
+            return
+        method = getattr(controller_object, mname)
+        # ... та виконуємо його - передаємо управління контролеру
 
-    def do_LINK(self):
-        self.send_response(200, "OK")
-        self.send_header("Content-type", "text/plain; charset=utf-8")
-        self.end_headers()
-        self.wfile.write("Link method response".encode())
+        try :
+            method()
+        except Exception as ex:
+            message = "Request processing error "
+            if DEV_MODE : message += str(ex)
+            self.send_error(500, message, phrase="Internal server error")
+ 
+
+    def check_static_asset(self, input: str) -> bool:
+        if self.command != "GET":
+            return False
+
+        if not input.startswith("/static/"):
+            return False
+
+        if input.endswith('/') or '../' in input:
+            self.send_error(400, "Invalid static path")
+            return True
+
+        relative_path = input.removeprefix("/static/")
+        file_path = './http/static/' + relative_path
+
+        ext = os.path.splitext(file_path)[1].lower()
+
+        if ext not in self.ALLOWED_STATIC_TYPES:
+            self.send_error(415, "Unsupported Media Type")
+            return True
+
+        try:
+            with open(file_path, 'rb') as file:
+                self.send_response(200, "OK")
+                self.send_header("Content-type", self.ALLOWED_STATIC_TYPES[ext])
+                self.end_headers()
+                self.wfile.write(file.read())
+            return True
+        except FileNotFoundError:
+            self.send_error(404, "Static file not found")
+            return True
+        except Exception as ex:
+            self.send_error(500, "Static file error")
+            return True
+
 
 def main() :
     host = '127.0.0.1'
@@ -165,118 +195,3 @@ if __name__ == '__main__' :
     main()    
     
 
-'''
-REST - обмеження на структуру даних, які можна сприймати як доповнення даних метаданими
-
-meta: {
-    uri: "https://my-site-loc/item?year=2026&month=2&day=10&shadeColor=gray&size=150&texturize=true",
-    cache: 100500,
-    receivedVariables: {
-        "year": 2026,
-        "month": 2,
-        "day": 10,
-        "shadeColor": "gray",
-        "size": 150,
-        "texturize": true
-    }
-    manipulations: {
-        read: "GET /item",
-        delete: "DELETE /item",
-        ...
-    },
-    links: {
-        "sub-item": "/item/id",
-        "search": "/item/search?q=...",
-    },
-    dataType: "object",
-    dataModel: {
-        {
-            fieldName: "title",
-            fieldType: string,
-            fieldMaxSize: 255,
-            fieldDescription: "Name of the item by producer"
-        }
-    }
-},
-data: {
-    title: "iPhone 14 Pro Max"
-}
-'''
-
-
-'''
-Homework
-
-{
-  "meta": {
-    "uri": "https://my-site-loc/items?page=2&pageSize=10",
-
-    "pagination": {
-      "page": 2,
-      "pageSize": 10,
-      "totalItems": 125,
-      "totalPages": 13
-    },
-
-    "cache": 3600,
-
-    "receivedVariables": {
-      "page": 2,
-      "pageSize": 10
-    },
-
-    "manipulations": {
-      "read": "GET /items",
-      "create": "POST /items",
-      "update": "PUT /items/{id}",
-      "delete": "DELETE /items/{id}"
-    },
-
-    "links": {
-      "self": "/items?page=2&pageSize=10",
-      "first": "/items?page=1&pageSize=10",
-      "last": "/items?page=13&pageSize=10",
-      "next": "/items?page=3&pageSize=10",
-      "prev": "/items?page=1&pageSize=10",
-      "create": "/items"
-    },
-
-    "dataType": "array",
-
-    "dataModel": {
-      "itemType": "object",
-      "fields": [
-        {
-          "fieldName": "id",
-          "fieldType": "number",
-          "description": "Unique item identifier"
-        },
-        {
-          "fieldName": "title",
-          "fieldType": "string",
-          "maxSize": 255,
-          "description": "Name of the item"
-        },
-        {
-          "fieldName": "createdAt",
-          "fieldType": "datetime",
-          "description": "Creation timestamp"
-        }
-      ]
-    }
-  },
-
-  "data": [
-    {
-      "id": 21,
-      "title": "Item A",
-      "createdAt": "2026-02-10T10:00:00Z"
-    },
-    {
-      "id": 22,
-      "title": "Item B",
-      "createdAt": "2026-02-10T11:00:00Z"
-    }
-  ]
-}
-'''
