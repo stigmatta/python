@@ -164,3 +164,119 @@ def main() :
 if __name__ == '__main__' :
     main()    
     
+
+'''
+REST - обмеження на структуру даних, які можна сприймати як доповнення даних метаданими
+
+meta: {
+    uri: "https://my-site-loc/item?year=2026&month=2&day=10&shadeColor=gray&size=150&texturize=true",
+    cache: 100500,
+    receivedVariables: {
+        "year": 2026,
+        "month": 2,
+        "day": 10,
+        "shadeColor": "gray",
+        "size": 150,
+        "texturize": true
+    }
+    manipulations: {
+        read: "GET /item",
+        delete: "DELETE /item",
+        ...
+    },
+    links: {
+        "sub-item": "/item/id",
+        "search": "/item/search?q=...",
+    },
+    dataType: "object",
+    dataModel: {
+        {
+            fieldName: "title",
+            fieldType: string,
+            fieldMaxSize: 255,
+            fieldDescription: "Name of the item by producer"
+        }
+    }
+},
+data: {
+    title: "iPhone 14 Pro Max"
+}
+'''
+
+
+'''
+Homework
+
+{
+  "meta": {
+    "uri": "https://my-site-loc/items?page=2&pageSize=10",
+
+    "pagination": {
+      "page": 2,
+      "pageSize": 10,
+      "totalItems": 125,
+      "totalPages": 13
+    },
+
+    "cache": 3600,
+
+    "receivedVariables": {
+      "page": 2,
+      "pageSize": 10
+    },
+
+    "manipulations": {
+      "read": "GET /items",
+      "create": "POST /items",
+      "update": "PUT /items/{id}",
+      "delete": "DELETE /items/{id}"
+    },
+
+    "links": {
+      "self": "/items?page=2&pageSize=10",
+      "first": "/items?page=1&pageSize=10",
+      "last": "/items?page=13&pageSize=10",
+      "next": "/items?page=3&pageSize=10",
+      "prev": "/items?page=1&pageSize=10",
+      "create": "/items"
+    },
+
+    "dataType": "array",
+
+    "dataModel": {
+      "itemType": "object",
+      "fields": [
+        {
+          "fieldName": "id",
+          "fieldType": "number",
+          "description": "Unique item identifier"
+        },
+        {
+          "fieldName": "title",
+          "fieldType": "string",
+          "maxSize": 255,
+          "description": "Name of the item"
+        },
+        {
+          "fieldName": "createdAt",
+          "fieldType": "datetime",
+          "description": "Creation timestamp"
+        }
+      ]
+    }
+  },
+
+  "data": [
+    {
+      "id": 21,
+      "title": "Item A",
+      "createdAt": "2026-02-10T10:00:00Z"
+    },
+    {
+      "id": 22,
+      "title": "Item B",
+      "createdAt": "2026-02-10T11:00:00Z"
+    }
+  ]
+}
+'''
