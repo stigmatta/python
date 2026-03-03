@@ -42,6 +42,7 @@ class AccessManagerRequestHandler(BaseHTTPRequestHandler):
             method()
 
             self.wfile.flush() # actually send the response if not already done.
+            self.close_connection = True
         except socket.timeout as e:
             # a read or a write timed out.  Discard this connection
             self.log_error("Request timed out: %r", e)
@@ -122,16 +123,16 @@ class RequestHandler(AccessManagerRequestHandler):
         # у ньому знаходимо клас class_name, створюємо з нього об'єкт
         controller_class = getattr(controller_module, class_name, None)
         if controller_class is None :
-            self.send_error(404, f"Controller class not found: {class_name}")
+            self.send_error(404, f"Controller class not found: {controller_class}")
             return
 
         controller_object = controller_class(self)
         
         # шукаємо в об'єкті метод serve ...
 
-        mname = 'do_' + self.command
+        mname = 'serve'
         if not hasattr(controller_object, mname):
-            self.send_error(405, "Unsupported method (%r) in '%r'" % (self.command, class_name))
+            self.send_error(500, "Non-standard controller" + ( f"method serve not found in '{class_name}'" if DEV_MODE else "" ))
             return
         method = getattr(controller_object, mname)
         # ... та виконуємо його - передаємо управління контролеру
@@ -141,7 +142,7 @@ class RequestHandler(AccessManagerRequestHandler):
         except Exception as ex:
             message = "Request processing error "
             if DEV_MODE : message += str(ex)
-            self.send_error(500, message, phrase="Internal server error")
+            self.send_error(500, message)
  
 
     def check_static_asset(self, input: str) -> bool:
