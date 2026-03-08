@@ -1,8 +1,11 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
 import os
 import socket
 import sys
 import urllib.parse
+
+from controllers.controller_rest import RestResponse, RestStatus
 
 DEV_MODE = True
 
@@ -117,22 +120,55 @@ class RequestHandler(AccessManagerRequestHandler):
             # шукаємо (підключаємо) модуль з іменем module_name
             controller_module = importlib.import_module(f"controllers.{module_name}")
         except Exception as ex:
-            self.send_error(404, f"Controller module not found: {module_name} {ex if DEV_MODE else ''}")
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.not_found_404,
+                    data=f"Controller module not found for service %s %s" % (
+                        self.api['service'], 
+                        f"{module_name}" if DEV_MODE else ""
+                    )
+                )
+            )
             return
         
         # у ньому знаходимо клас class_name, створюємо з нього об'єкт
         controller_class = getattr(controller_module, class_name, None)
         if controller_class is None :
-            self.send_error(404, f"Controller class not found: {controller_class}")
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.not_found_404,
+                    data=f"Controller class not found for service %s %s" % (
+                        self.api['service'], f"{class_name}" if DEV_MODE else ""
+                    )
+                )
+            )
             return
 
-        controller_object = controller_class(self)
+        try:
+            controller_object = controller_class(self)
+        except:
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.internal_error_500,
+                    data=f"Controller constructor error for service %s %s" % (
+                        self.api['service'], f"{class_name}" if DEV_MODE else ""
+                    )
+                )
+            )
+            return
         
         # шукаємо в об'єкті метод serve ...
 
         mname = 'serve'
         if not hasattr(controller_object, mname):
-            self.send_error(500, "Non-standard controller" + ( f"method serve not found in '{class_name}'" if DEV_MODE else "" ))
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.service_unavailable_503,
+                    data=f"Non-standard controller for service %s %s" % (
+                        self.api['service'], f"method serve is not found in {class_name}" if DEV_MODE else ""
+                    )
+                )
+            )
             return
         method = getattr(controller_object, mname)
         # ... та виконуємо його - передаємо управління контролеру
@@ -140,10 +176,26 @@ class RequestHandler(AccessManagerRequestHandler):
         try :
             method()
         except Exception as ex:
-            message = "Request processing error "
-            if DEV_MODE : message += str(ex)
-            self.send_error(500, message)
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.service_unavailable_503,
+                    data=f"Request processing error for service %s %s" % (
+                        self.api['service'], str(ex) if DEV_MODE else ""
+                    )
+                )
+            )
  
+
+    def send_rest_response(self, rest_response):
+        self.send_response(200, "OK")
+        self.send_header("Content-type", "application/json; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(
+            json.dumps(
+                rest_response,
+                ensure_ascii=False,
+                default=lambda x: x.__json__() if hasattr(x, '__json__') else str
+            ).encode())
 
     def check_static_asset(self, input: str) -> bool:
         if self.command != "GET":
@@ -162,7 +214,12 @@ class RequestHandler(AccessManagerRequestHandler):
         ext = os.path.splitext(file_path)[1].lower()
 
         if ext not in self.ALLOWED_STATIC_TYPES:
-            self.send_error(415, "Unsupported Media Type")
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.unsupported_media_415,
+                    data=f"Unsupported static file type: {ext}"
+                )
+            )
             return True
 
         try:
@@ -173,10 +230,20 @@ class RequestHandler(AccessManagerRequestHandler):
                 self.wfile.write(file.read())
             return True
         except FileNotFoundError:
-            self.send_error(404, "Static file not found")
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.not_found_404,
+                    data=f"Static file not found: {relative_path}"
+                )
+            )
             return True
         except Exception as ex:
-            self.send_error(500, "Static file error")
+            self.send_rest_response(
+                RestResponse(
+                    status=RestStatus.internal_error_500,
+                    data=f"Static file error: {str(ex)}"
+                )
+            )
             return True
 
 

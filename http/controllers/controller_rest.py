@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler
-import json
-from controllers.rest_response import RestResponse
+from controllers.rest_response import RestResponse, RestStatus
+from controllers.rest_error import RestError
 
 class ControllerRest:
     def __init__(self, handler: BaseHTTPRequestHandler):
@@ -8,15 +8,14 @@ class ControllerRest:
         self.rest_response = RestResponse()
 
     def before_execution(self):
-        pass
+        self.rest_response = RestResponse()
 
-    def after_execution(self):
-        pass
 
     def serve(self):
+        self.before_execution()
         mname = 'do_' + self.handler.command
         if not hasattr(self, mname):
-            self.rest_response.status = RestResponse(
+            self.rest_response.status = RestStatus(
                 is_ok=False,
                 code=405,
                 phrase=f"Unsupported method (%r) in '%r'" % (self.handler.command, self.__class__.__name__)
@@ -24,30 +23,31 @@ class ControllerRest:
         else:
             method = getattr(self, mname)
             try:
-                self.before_execution()
                 method()
-                self.after_execution()
+                self.send_success()
+                return
+            except RestError as err:
+                self.rest_response.status = RestStatus(
+                    is_ok=False,
+                    code=err.code,
+                    phrase=err.phrase
+                )
+                self.rest_response.data = err.data
             except Exception as ex:
                 message = "Request processing error "
                 print(str(ex))
-                self.rest_response.status = RestResponse(
+                self.rest_response.status = RestStatus(
                     is_ok=False,
                     code=500,
                     phrase=message + str(ex)
                 )
+        self.send_error()
+    
+    def send_success(self):
+        self.handler.send_rest_response(self.rest_response)
 
-        self.send_rest_response()
+
+    def send_error(self):
+        self.handler.send_rest_response(self.rest_response)
 
 
-
-    def send_rest_response(self):
-        self.handler.send_response(200, "OK")
-        self.handler.send_header("Content-type", "application/json; charset=utf-8")
-        self.handler.end_headers()
-        self.handler.wfile.write(
-            json.dumps(
-                self.rest_response,
-                ensure_ascii=False,
-                default=lambda x: x.__json__() if hasattr(x, '__json__') else str
-            ).encode()
-        )

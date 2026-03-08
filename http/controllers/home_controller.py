@@ -1,15 +1,10 @@
-from http.server import BaseHTTPRequestHandler
+
+from controllers.controller_rest import ControllerRest
 
 
-class HomeController:
-    def __init__(self, handler: BaseHTTPRequestHandler):
-        self.handler = handler
+class HomeController(ControllerRest):
 
     def do_GET(self):
-        self.handler.send_response(200, "OK")
-        self.handler.send_header("Content-type", "text/html; charset=utf-8")
-        self.handler.end_headers()
-        
         query_params_links_html = f"""
         <h2>Перевірка query params (Д.З.):</h2>
         <ul>
@@ -34,11 +29,11 @@ class HomeController:
         <hr>
         """
 
-        self.handler.wfile.write(f"""
+        self.html = f"""
             <html>
                 <body>
                     <h1>HTTP</h1>
-                    <img src="/Python.png" alt="Python logo" width="200">
+                    <img src="/static/Python.png" alt="Python logo" width="200">   
                     {query_params_links_html}
                     <br>
                     <br>
@@ -47,11 +42,22 @@ class HomeController:
                     <b>Параметри (словник):</b> {self.handler.query_params}
                     <b>API:</b> {self.handler.api}
                     <hr>
-                    <button onclick="linkClick()">LINK</button>
+                    <button onclick="onClick('LINK')">LINK</button>
+                    <button onclick="onClick('POST')">POST</button>
+                    <button onclick="onClick('GET', 'user')">GET user</button>
+                    <button onclick="onClick('POST', 'user')">POST user</button>
+
+                    <button onclick="onClick('GET', 'no')">GET no module</button>
+                    <button onclick="onClick('GET', 'noclass')">GET no controller</button>
+                    <button onclick="onClick('GET', 'noinit')">GET no constructor</button>
+                    <button onclick="onClick('GET', 'noserve')">GET no serve method</button>
+                    <button onclick="onClick('GET', 'exserve')">GET exception in serve</button>
                     <p id=out></p>
                     <script>
-                        function linkClick() {{
-                            fetch('/', {{ method: 'LINK' }}).then(response => response.text())
+                        function onClick(method, service='') {{
+                            fetch(`/${{service}}`, {{
+                                method: method 
+                            }}).then(response => response.text())
                             .then(data => {{
                                 out.innerText = data;
                             }})
@@ -59,10 +65,17 @@ class HomeController:
                     </script>
                 </body>
             </html>
-        """.encode())
+        """
+        self.content_type = "text/html; charset=utf-8"
 
     def do_LINK(self):
+        self.html = "LINK method response"
+        self.content_type = "text/plain; charset=utf-8"
+
+    
+    def send_success(self):
         self.handler.send_response(200, "OK")
-        self.handler.send_header("Content-type", "text/plain; charset=utf-8")
+        self.handler.send_header("Content-type", self.content_type)
         self.handler.end_headers()
-        self.handler.wfile.write("Link method response".encode())
+        self.handler.wfile.write(self.html.encode())
+
