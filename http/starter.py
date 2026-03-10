@@ -73,7 +73,6 @@ class RequestHandler(AccessManagerRequestHandler):
     }
 
     def __init__(self, request, client_address, server):
-        self.query_params = {}
         self.api = {
             "method": None,
             "service": None,
@@ -94,20 +93,7 @@ class RequestHandler(AccessManagerRequestHandler):
 
         self.api["service"] = splitted_path[0] if len(splitted_path) > 0 and len(splitted_path[0]) else "home"
         self.api["section"] = splitted_path[1] if len(splitted_path) > 1 and len(splitted_path[1]) else None
-
-        query_string = parts[1] if len(parts) > 1 else None
-
-        if query_string:
-            for item in query_string.split("&"):
-                if not item:
-                    continue
-                
-                key, value = map(url_decode, item.split("=", 1) if "=" in item else [item, None])
-                
-                self.query_params[key] = value if key not in self.query_params else [
-                    *(self.query_params[key] if isinstance(self.query_params[key], (list, tuple)) else [self.query_params[key]]),
-                    value
-                ]
+        self.query_string = parts[1] if len(parts) > 1 else None
         
         module_name = self.api["service"].lower() + '_controller'    # назва файлу контролера без розширення (home_controller)
         class_name  = self.api["service"].capitalize() + 'Controller' # назва класу (HomeController)

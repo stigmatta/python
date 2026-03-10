@@ -1,4 +1,6 @@
 from http.server import BaseHTTPRequestHandler
+
+import urllib.parse
 from controllers.rest_response import RestResponse, RestStatus
 from controllers.rest_error import RestError
 
@@ -12,6 +14,19 @@ class ControllerRest:
 
 
     def serve(self):
+        self.query_params = {}
+        if self.handler.query_string:
+            for item in self.handler.query_string.split("&"):
+                if not item:
+                    continue
+                
+                key, value = map(lambda input: None if input is None else urllib.parse.unquote_plus(input),
+                                  item.split("=", 1) if "=" in item else [item, None])
+                
+                self.query_params[key] = value if key not in self.query_params else [
+                    *(self.query_params[key] if isinstance(self.query_params[key], (list, tuple)) else [self.query_params[key]]),
+                    value
+                ]
         self.before_execution()
         mname = 'do_' + self.handler.command
         if not hasattr(self, mname):
@@ -22,6 +37,7 @@ class ControllerRest:
             )
         else:
             method = getattr(self, mname)
+
             try:
                 method()
                 self.send_success()

@@ -39,7 +39,7 @@ class HomeController(ControllerRest):
                     <br>
                     {routes_links_html}
                     <b>self.path:</b> {self.handler.path}<br>
-                    <b>Параметри (словник):</b> {self.handler.query_params}
+                    <b>Параметри (словник):</b> {self.query_params}
                     <b>API:</b> {self.handler.api}
                     <hr>
                     <button onclick="onClick('LINK')">LINK</button>
@@ -52,6 +52,9 @@ class HomeController(ControllerRest):
                     <button onclick="onClick('GET', 'noinit')">GET no constructor</button>
                     <button onclick="onClick('GET', 'noserve')">GET no serve method</button>
                     <button onclick="onClick('GET', 'exserve')">GET exception in serve</button>
+                    <br/>
+                    <button onclick="onClick('GET', 'product')">GET product</button>
+
                     <p id=out></p>
                     <script>
                         function onClick(method, service='') {{
