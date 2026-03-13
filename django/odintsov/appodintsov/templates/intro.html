@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intro hw — Django</title>
+</head>
+<body>
+
+<h1>Вступ до фреймворка веб-розробки Django</h1>
+<br/>
+
+<h2>Сторінку завантажено о {{date}}</h2>
+<br/>
+
+<section>
+    <h2>Передумови</h2>
+    <h3>Управління пакетами: програма pip</h3>
+    <p>Перевіряємо наявність та роботу — у терміналі набираємо команду:</p>
+    <pre><code>&gt; pip --version
+pip 26.0.1 from C:\Python\Python313\Lib\site-packages\pip (python 3.13)</code></pre>
+    <p>Якщо команда не спрацьовує, слід перевірити чи встановлений Python. Якщо немає — встановити. Якщо є:</p>
+    <ul>
+        <li>додати шлях до pip до системної змінної <code>PATH</code></li>
+        <li>або використовувати повний шлях для запуску pip:
+            <pre><code>&amp;"C:\Python\Python313\Scripts\pip" --version</code></pre>
+        </li>
+    </ul>
+    <p>Встановлюємо дозвіл на виконання сторонніх скриптів (Windows PowerShell):</p>
+    <pre><code>PS&gt; Set-ExecutionPolicy Unrestricted -Scope Process</code></pre>
+    <p>Якщо виникають запитання — відповісти <strong>All (A)</strong>.</p>
+</section>
+
+<section>
+    <h2>Віртуальне оточення Python</h2>
+    <p>
+        Особливістю Python у схемі управління пакетами є те, що всі пакети встановлюються глобально.
+        Це означає, що всі налаштування автоматично поширюються на всі проєкти користувача.
+    </p>
+    <p>Переходимо до директорії, де буде створено проєкт (<code>source/repos</code>):</p>
+    <pre><code>&gt; python -m venv django</code></pre>
+    <p>
+        З'являється нова директорія <code>django</code>, у якій є копія структури Python,
+        що забезпечує локальність встановлених пакетів.
+    </p>
+    <p>Для роботи у локальному оточенні його необхідно активовувати кожен раз, коли відновлюється робота з проєктом.</p>
+    <p>Переходимо до директорії:</p>
+    <pre><code>&gt; cd django</code></pre>
+    <p>Активуємо оточення (залежно від інструментарію):</p>
+    <pre><code>PS&gt;  ./Scripts/Activate.ps1
+CMD&gt; ./Scripts/activate.bat
+MAC&gt; source django/bin/activate</code></pre>
+    <p>У результаті до командного промпту додається назва оточення:</p>
+    <pre><code>(django) PS ...&gt;</code></pre>
+    <p><strong>Увага!</strong> При відновленні роботи з проєктом (після перезавантажень, вимкнень ПК) необхідно знову активувати оточення — стежимо за промптом!</p>
+</section>
+
+<section>
+    <h2>Проєкт Django</h2>
+    <p>Встановлюємо фреймворк:</p>
+    <pre><code>(django)&gt; python -m pip install Django</code></pre>
+    <p>
+        Цю команду бажано повторювати при клонуванні проєкту.
+        Ознакою успішного встановлення є поява управлінського скрипта <code>django-admin.exe</code>,
+        через який продовжується налаштування. Його відсутність може свідчити про неправильну активацію оточення.
+    </p>
+    <p>Створюємо проєкт:</p>
+    <pre><code>(django)&gt; django-admin startproject project221</code></pre>
+    <p>Додається директорія з назвою проєкту <code>project221</code>, у якій міститься скрипт управління <code>manage.py</code>.</p>
+
+    <p>Коригуємо <code>.gitignore</code> так, щоб проєкт лишався у репозиторії, а оточення — ні:</p>
+    <pre><code># Created by venv; see https://docs.python.org/3/library/venv.html
+Include/*
+Scripts/*
+Lib/*
+pyvenv.cfg</code></pre>
+
+    <p>Створюємо застосунок — переходимо до проєкту:</p>
+    <pre><code>(django)&gt; cd project221
+(django)&gt; python manage.py startapp app221</code></pre>
+
+    <p>Перевіряємо успішність встановлення запуском сервера:</p>
+    <pre><code>(django)&gt; python manage.py runserver</code></pre>
+    <ul>
+        <li>У браузері має відкриватись адреса, що зазначена за результатом запуску.</li>
+        <li>Відбувається активація проєкту, зокрема, створюється БД (<code>db.sqlite3</code>).</li>
+    </ul>
+    <p>Зупиняємо сервер.</p>
+</section>
+
+<section>
+    <h2>Архітектура MVT</h2>
+    <p>У Django використовується архітектура <strong>MVT (Model View Template)</strong>:</p>
+    <dl>
+        <dt><strong>Model</strong></dt>
+        <dd>«постачальник» даних</dd>
+
+        <dt><strong>Template</strong></dt>
+        <dd>шаблон відображення — HTML документ з підстановкою виразів</dd>
+
+        <dt><strong>View</strong></dt>
+        <dd>функції, які забезпечують прийом запитів та підготовку відповідей (у т.ч. з шаблонами) — є аналогом контролерів</dd>
+    </dl>
+
+    <p><strong>Маршрутизація</strong> забезпечується співставленням шляху запиту та View за допомогою спеціальних файлів <code>urls.py</code>.</p>
+    <p>Слідуємо коментарям у файлі проєкту в контексті пункту <em>"Including another URLconf"</em>:</p>
+
+    <ol>
+        <li>
+            <p>Створюємо аналогічний файл у застосунку <code>./app221/urls.py</code></p>
+        </li>
+        <li>
+            <p>Оновлюємо імпорт у проєктному файлі <code>./project221/urls.py</code>:</p>
+            <pre><code>from django.urls import include, path</code></pre>
+        </li>
+        <li>
+            <p>Додаємо файл-конфігурацію до патернів URL:</p>
+            <pre><code>path('', include('app221.urls')),</code></pre>
+        </li>
+        <li>
+            <p>Створюємо view — у файлі <code>./app221/views.py</code> оголошуємо функцію <code>hello</code>:</p>
+            <pre><code>from django.http import HttpResponse
+
+def hello(request):
+    return HttpResponse("Hello, World!")</code></pre>
+        </li>
+        <li>
+            <p>У застосунку <code>./app221/urls.py</code> створюємо масив <code>urlpatterns</code>:</p>
+            <pre><code>from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.hello, name="hello"),
+]</code></pre>
+        </li>
+        <li>
+            <p>Реєструємо застосунок у проєкті <code>./project221/settings.py</code>:</p>
+            <pre><code>INSTALLED_APPS = [
+    ...
+    'app221'   # додаємо цей рядок
+]</code></pre>
+        </li>
+        <li>
+            <p>Виконуємо міграції (зупиняємо сервер):</p>
+            <pre><code>(django)&gt; python manage.py migrate</code></pre>
+        </li>
+        <li>
+            <p>Запускаємо сервер та оновлюємо сторінку у браузері:</p>
+            <pre><code>(django)&gt; python manage.py runserver</code></pre>
+        </li>
+    </ol>
+</section>
+
+<section>
+    <h2>Templates</h2>
+    <p>У директорії застосунку створюємо директорію <code>templates</code>. У ній створюємо файл <code>index.html</code> (назва довільна).</p>
+    <p>Створюємо нову функцію view <code>index</code>:</p>
+    <pre><code>def index(request):
+    template = loader.get_template('index.html')
+    return HttpResponse(template.render())</code></pre>
+    <p>Реєструємо маршрут (URL) — замінюємо <code>hello</code> на <code>/hello</code>, а <code>index</code> на <code>''</code>.</p>
+
+    <h3>Передача даних до представлення — контекст</h3>
+    <p>Для відображення змінної у шаблоні використовується синтаксис подвійних фігурних дужок:</p>
+    <pre><code>{{ x }}</code></pre>
+</section>
+
+</body>
+</html>
