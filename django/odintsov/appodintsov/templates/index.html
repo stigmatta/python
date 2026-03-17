@@ -1,15 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Django intro</title>
-</head>
-<body>
-    <h1>Знайомство з фреймворком Django</h1>
+{% extends "layout.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block render_body %}
+    <h1 class="display-5">Знайомство з фреймворком Django</h1>
     <div>
-        <a href="/intro">Django intro</a>
+        <a class="link-warning link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="/intro">Django intro</a>
     </div>
-    &#x7B;&#x7B;x&#x7D;&#x7D; = {{x}}, &#x7B;&#x7B;str&#x7D;&#x7D; = {{str}}
-</body>
-</html>
+{% endblock %}
+

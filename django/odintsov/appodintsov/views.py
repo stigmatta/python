@@ -22,3 +22,6 @@ def intro(request):
     }
     return HttpResponse(template.render(context=context, request=request))
 
+def privacy(request):
+    return render(request, 'privacy.html')
+
