@@ -2,28 +2,25 @@ from datetime import datetime
 
 from django.shortcuts import render
 from django.http import HttpResponse
-from django.template import loader
 
 from .forms.registration_form import RegistrationForm
-from .forms.demo_forms import DemoForm
+from .forms.demo_form import DemoForm
 
 def hello(request):
     return HttpResponse("Hello, World!")
 
 def index(request):
-    template = loader.get_template('index.html')
     context = {
         'x': 10,
         'str': "The String",
     }
-    return HttpResponse(template.render(context=context, request=request))
+    return render(request, 'index.html', context)
 
 def intro(request):
-    template = loader.get_template('intro.html')
     context = {
         'date': datetime.now().strftime('%d.%m.%Y %H:%M'),
     }
-    return HttpResponse(template.render(context=context, request=request))
+    return render(request, 'intro.html', context)
 
 def privacy(request):
     return render(request, 'privacy.html')
